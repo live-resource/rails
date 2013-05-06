@@ -1,0 +1,1 @@
+require "live_resource/rails/version"
