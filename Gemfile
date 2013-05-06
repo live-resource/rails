@@ -15,7 +15,3 @@ gem "jquery-rails"
 
 # To use debugger
 # gem 'ruby-debug'
-
-gem 'rails', '~> 3.2.13'
-gem 'live_resource', path: '/Users/Will/Projects/Balanced Tree/live_resource'
-gem 'rspec'
