@@ -14,6 +14,16 @@ describe LiveResource::Rails::ControllerDSL do
     end
   end
 
+  let(:url_helpers_module) do
+    module URLHelpers
+    end
+    URLHelpers
+  end
+
+  before do
+    Rails.stub_chain(:application, :routes, :url_helpers).and_return(url_helpers_module)
+  end
+
   describe "#live_resource" do
 
     subject do
@@ -24,12 +34,10 @@ describe LiveResource::Rails::ControllerDSL do
     let(:controller) { DummyController.new }
     let(:builder) do
       double(LiveResource::Builder,
-             method_name:     method_name,
              resource_method: resource_method,
              resource:        resource)
     end
     let(:block) { Proc.new {} }
-    let(:method_name) { :some_method }
     let(:resource_method) { Proc.new {} }
     let(:resource) { double(LiveResource::Resource, name: resource_name) }
     let(:resource_name) { :some_method }
@@ -83,8 +91,15 @@ describe LiveResource::Rails::ControllerDSL do
         context 'and the supported dependency types are set' do
           let(:dependency_types) { [double(LiveResource::Dependency)] }
 
+          let(:dependencies) { [] }
+
+          before do
+            resource.stub(dependencies: dependencies)
+          end
+
           it "should instantiate a new builder" do
-            LiveResource::Builder.should_receive(:new).with(:some_thing, protocol, dependency_types)
+            LiveResource::Builder.should_receive(:new).with(:some_thing, protocol, dependency_types,
+                                                            an_instance_of(Module))
             subject
           end
 
@@ -94,13 +109,40 @@ describe LiveResource::Rails::ControllerDSL do
           end
 
           it "should define a new method on the controller" do
-            controller_class.should_receive(:define_method).with(method_name, resource_method)
+            controller_class.should_receive(:define_method).with(:"#{resource.name}_resource", instance_of(Proc))
             subject
+          end
+
+          describe "the method" do
+            before do
+              _proc = nil
+              controller_class.stub(:define_method) { |name, proc| _proc = proc }
+              subject
+              @proc = _proc
+            end
+
+            let(:method) { @proc }
+
+            it 'should return the resource' do
+              expect(method.call).to be resource
+            end
           end
 
           it "should define a helper method for the identifier" do
             ActionController::Base.should_receive(:helper)
             subject
+          end
+
+          context 'when the block defines some dependencies' do
+            let(:dependencies) { [dependency1, dependency2] }
+            let(:dependency1) { double(LiveResource::Dependency, watch: nil) }
+            let(:dependency2) { double(LiveResource::Dependency, watch: nil) }
+
+            it 'should activate each dependency' do
+              dependency1.should_receive(:watch)
+              dependency2.should_receive(:watch)
+              subject
+            end
           end
         end
       end
