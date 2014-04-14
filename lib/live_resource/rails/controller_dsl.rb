@@ -20,7 +20,7 @@ module LiveResource
           raise 'You must set config.live_resource.dependency_types (e.g. in application.rb)' unless dependency_types
 
           # Set up the builder
-          builder = Builder.new(resource_identifier, protocol, dependency_types, Module.new do
+          builder = LiveResource::Builder.new(resource_identifier, protocol, dependency_types, Module.new do
             # TODO: This is added for convenience, so that in the execution scope of the identifier block we'll have
             # access to path helpers. This needs to be refactored into something more elegant.
             include ::Rails.application.routes.url_helpers
@@ -35,14 +35,15 @@ module LiveResource
           # Grab the result
           resource = builder.resource
 
-          # Create a method on the controller to allow access to the Resource
-          self.instance_eval do
+          # Create a static method on the controller to allow access to the Resource
+          eigenclass = class << self; self; end
+          eigenclass.instance_eval do
             define_method(:"#{resource.name}_resource", Proc.new { resource })
           end
 
           # Create a helper method to allow views to access the resource ID
           ActionController::Base.helper do
-            define_method(:"live_#{builder.resource.name}_id") do |*context|
+            define_method(:"live_#{resource.name}_id") do |*context|
               resource.identifier(*context)
             end
           end

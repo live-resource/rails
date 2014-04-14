@@ -28,7 +28,7 @@ describe LiveResource::Rails::ControllerDSL do
 
     subject do
       b = block # let'ed methods are lost in the scope of the proc
-      controller_class.class_eval(&Proc.new { live_resource(:some_thing, &b) })
+      controller_class.class_eval { live_resource(:some_thing, &b) }
     end
 
     let(:controller) { DummyController.new }
@@ -44,7 +44,6 @@ describe LiveResource::Rails::ControllerDSL do
 
     before do
       LiveResource::Builder.stub(:new).and_return(builder)
-      ActionController::Base.stub(:helper)
     end
 
     context 'when live resource is not configured' do
@@ -108,29 +107,16 @@ describe LiveResource::Rails::ControllerDSL do
             subject
           end
 
-          it "should define a new method on the controller" do
-            controller_class.should_receive(:define_method).with(:"#{resource.name}_resource", instance_of(Proc))
+          it "should define a static method on the controller class to access the resource instance" do
             subject
-          end
-
-          describe "the method" do
-            before do
-              _proc = nil
-              controller_class.stub(:define_method) { |name, proc| _proc = proc }
-              subject
-              @proc = _proc
-            end
-
-            let(:method) { @proc }
-
-            it 'should return the resource' do
-              expect(method.call).to be resource
-            end
+            expect(controller_class.send :"#{resource.name}_resource").to be resource
           end
 
           it "should define a helper method for the identifier" do
-            ActionController::Base.should_receive(:helper)
+            resource_id = '123'
+            resource.stub(identifier: resource_id)
             subject
+            expect(ActionController::Base.helpers.send(:"live_#{resource.name}_id")).to eq resource_id
           end
 
           context 'when the block defines some dependencies' do
