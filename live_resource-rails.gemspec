@@ -9,8 +9,8 @@ Gem::Specification.new do |spec|
   spec.authors     = ["Will Madden"]
   spec.email       = ["will@letsgeddit.com"]
   spec.description = %q{Convenience methods for using LiveResource in Rails applications}
-  spec.summary     = %q{Convenience methods for using LiveResource in Rails applications}
-  spec.homepage    = ""
+  spec.summary     = %q{live_resource Rails extension}
+  spec.homepage    = "https://github.com/live-resource/rails"
   spec.license     = "MIT"
 
   spec.files         = `git ls-files`.split($/)
